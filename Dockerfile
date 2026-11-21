@@ -25,8 +25,6 @@ RUN chmod +x /app/var/docker/start.sh
 RUN pnpm install
 RUN NODE_OPTIONS="--max-old-space-size=4096" pnpm run build
 
-ENV NODE_OPTIONS="--max-old-space-size=220"
-
 EXPOSE 5000
 
 CMD ["/app/var/docker/start.sh"]
