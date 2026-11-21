@@ -1,28 +1,23 @@
 #!/bin/bash
+set -e
 
-# 1. Start Nginx immediately on port 5000 so Render detects port binding
-echo "==> Starting Nginx on port 5000..."
+# 1. Start Nginx immediately on ports 10000 and 5000 so Render port scan succeeds instantly
+echo "==> Starting Nginx on ports 10000 and 5000..."
 nginx
 
-# 2. Sync database schema (non-blocking if already in sync)
-echo "==> Verifying database schema..."
-pnpm run prisma-db-push || true
-
-# 3. Start backend directly with PM2 (memory: 320MB for Nest module bootstrap)
-echo "==> Starting backend service..."
+# 2. Start Backend directly with Node (trimmed to Facebook, Instagram, TikTok, YouTube)
+echo "==> Starting Backend on internal port 3000..."
 cd /app/apps/backend
-pm2 start ./dist/apps/backend/src/main.js \
-  --name backend \
-  --node-args="--experimental-require-module --max-old-space-size=320"
+PORT=3000 BACKEND_INTERNAL_PORT=3000 node --experimental-require-module --max-old-space-size=220 ./dist/apps/backend/src/main.js &
+BACKEND_PID=$!
 
-# 4. Start frontend directly with PM2 (memory: 150MB)
-echo "==> Starting frontend service..."
+# 3. Start Frontend directly with Node on internal port 4200
+echo "==> Starting Frontend on internal port 4200..."
 cd /app/apps/frontend
-pm2 start ../../node_modules/next/dist/bin/next \
-  --name frontend \
-  --node-args="--max-old-space-size=150" \
-  -- start -p 4200
+node --max-old-space-size=140 ../../node_modules/next/dist/bin/next start -p 4200 &
+FRONTEND_PID=$!
 
-# 5. Stream logs so the container stays alive and logs are visible on Render
-echo "==> Services launched. Streaming PM2 logs..."
-pm2 logs
+echo "==> Services active (Backend PID: $BACKEND_PID, Frontend PID: $FRONTEND_PID). Container is live!"
+
+# 4. Wait for processes and keep container running
+wait -n $BACKEND_PID $FRONTEND_PID

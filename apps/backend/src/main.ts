@@ -59,7 +59,9 @@ async function start() {
     },
   });
 
-  await startMcp(app);
+  if (process.env.ENABLE_MCP === 'true') {
+    await startMcp(app);
+  }
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -77,9 +79,11 @@ async function start() {
   app.useGlobalFilters(new PostValidationExceptionFilter());
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  loadSwagger(app);
+  if (process.env.ENABLE_SWAGGER === 'true') {
+    loadSwagger(app);
+  }
 
-  const port = process.env.PORT || 3000;
+  const port = process.env.BACKEND_INTERNAL_PORT || 3000;
 
   try {
     await app.listen(port);

@@ -14,7 +14,7 @@ RUN addgroup --system www \
  && mkdir -p /www \
  && chown -R www:www /www /var/lib/nginx
 
-RUN npm --no-update-notifier --no-fund --global install pnpm@10.6.1 pm2
+RUN npm --no-update-notifier --no-fund --global install pnpm@10.6.1
 
 WORKDIR /app
 
@@ -25,6 +25,6 @@ RUN chmod +x /app/var/docker/start.sh
 RUN pnpm install
 RUN NODE_OPTIONS="--max-old-space-size=4096" pnpm run build
 
-EXPOSE 5000
+EXPOSE 10000 5000
 
 CMD ["/app/var/docker/start.sh"]
