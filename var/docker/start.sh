@@ -1,23 +1,20 @@
 #!/bin/bash
-set -e
 
-echo "==> Running Prisma DB push..."
-pnpm run prisma-db-push || true
-
-echo "==> Starting backend and frontend with PM2..."
-pnpm --filter ./apps/backend --filter ./apps/frontend run pm2
-
-echo "==> Waiting for frontend to be ready on port 4200..."
-for i in $(seq 1 45); do
-  if (echo > /dev/tcp/127.0.0.1/4200) >/dev/null 2>&1; then
-    echo "==> Frontend is ready!"
-    break
-  fi
-  sleep 1
-done
-
+# 1. Start Nginx immediately so Render detects port 5000 right away
 echo "==> Starting Nginx on port 5000..."
 nginx
 
-echo "==> Container ready. Tailing PM2 logs..."
-pm2 logs
+# 2. Sync database schema (non-blocking if already in sync)
+echo "==> Verifying database schema..."
+pnpm run prisma-db-push || true
+
+# 3. Start backend and frontend with PM2
+echo "==> Starting backend service..."
+cd /app/apps/backend && pm2 start pnpm --name backend -- start
+
+echo "==> Starting frontend service..."
+cd /app/apps/frontend && pm2 start pnpm --name frontend -- start
+
+# 4. Stream logs so the container stays alive and logs are visible on Render
+echo "==> Services launched. Streaming PM2 logs..."
+cd /app && pm2 logs
